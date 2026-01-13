@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Точка входа в игру."""
 
+from labyrinth_game.constants import COMMANDS
 from labyrinth_game.player_actions import (
     get_input,
     move_player,
@@ -9,12 +10,13 @@ from labyrinth_game.player_actions import (
     use_item,
 )
 from labyrinth_game.utils import (
-    describe_current_room,
-    solve_puzzle,
     attempt_open_treasure,
+    describe_current_room,
     show_help,
+    solve_puzzle,
 )
-from labyrinth_game.constants import ROOMS
+
+DIRECTIONS = {"north", "south", "east", "west"}
 
 
 def process_command(game_state: dict, command: str) -> None:
@@ -22,9 +24,23 @@ def process_command(game_state: dict, command: str) -> None:
     if not command:
         return
 
-    command = command.strip()
+    command = command.strip().lower()
+    if not command:
+        return
+
     parts = command.split()
     action = parts[0]
+
+    # 🔑 выход из игры
+    if action in ("quit", "exit"):
+        print("Игра завершена.")
+        game_state["game_over"] = True
+        return
+
+    # 🔑 однословные команды направления
+    if action in DIRECTIONS:
+        move_player(game_state, action)
+        return
 
     if action == "look":
         describe_current_room(game_state)
@@ -41,7 +57,6 @@ def process_command(game_state: dict, command: str) -> None:
         if len(parts) < 2:
             print("Укажите, что взять.")
         else:
-            # запрет на взятие сундука
             if parts[1] == "treasure_chest":
                 print("Вы не можете поднять сундук, он слишком тяжелый.")
             else:
@@ -56,24 +71,18 @@ def process_command(game_state: dict, command: str) -> None:
         return
 
     if action == "solve":
-        current_room = game_state["current_room"]
-        if current_room == "treasure_room":
+        if game_state["current_room"] == "treasure_room":
             attempt_open_treasure(game_state)
         else:
             solve_puzzle(game_state)
         return
 
     if action == "help":
-        show_help()
+        show_help(COMMANDS)
         return
 
     if action in ("inventory", "inv"):
         show_inventory(game_state)
-        return
-
-    if action in ("quit", "exit"):
-        print("Игра завершена.")
-        game_state["game_over"] = True
         return
 
     print("Неизвестная команда.")
@@ -85,8 +94,8 @@ def main() -> None:
         "player_inventory": [],
         "current_room": "entrance",
         "game_over": False,
-        "steps_taken": 0,      # счётчик шагов
-        "puzzles_solved": 0,   # счётчик решённых загадок
+        "steps": 0,
+        "puzzles_solved": 0,
     }
 
     print("Добро пожаловать в Лабиринт сокровищ!")

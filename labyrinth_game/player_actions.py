@@ -1,7 +1,7 @@
 """Действия игрока."""
 
 from labyrinth_game.constants import ROOMS
-from labyrinth_game.utils import describe_current_room
+from labyrinth_game.utils import describe_current_room, random_event
 
 
 def show_inventory(game_state: dict) -> None:
@@ -36,10 +36,28 @@ def move_player(game_state: dict, direction: str) -> None:
         return
 
     new_room = exits[direction]
-    game_state["current_room"] = new_room
-    game_state["steps_taken"] += 1
 
+    # блокировка комнаты сокровищ
+    if new_room == "treasure_room":
+        if "rusty_key" in game_state["player_inventory"]:
+            print(
+                "Вы используете найденный ключ, чтобы открыть путь в комнату сокровищ."
+            )
+        else:
+            print("Дверь заперта. Нужен ключ, чтобы пройти дальше.")
+            return
+
+    # переход в новую комнату
+    game_state["current_room"] = new_room
+
+    # увеличиваем счётчик шагов (seed для случайностей)
+    game_state["steps"] += 1
+
+    # описание новой комнаты
     describe_current_room(game_state)
+
+    # случайное событие после перемещения
+    random_event(game_state)
 
 
 def take_item(game_state: dict, item_name: str) -> None:
